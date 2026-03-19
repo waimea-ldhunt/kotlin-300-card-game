@@ -1,7 +1,12 @@
 import com.formdev.flatlaf.themes.FlatMacDarkLaf
 import java.awt.Color
 import java.awt.Font
+import java.awt.Image
 import javax.swing.*
+import kotlin.random.Random
+
+fun ImageIcon.scaled(width: Int, height: Int): ImageIcon =
+    ImageIcon(image.getScaledInstance(width, height, Image.SCALE_SMOOTH))
 
 /**
  * Application entry point
@@ -9,8 +14,8 @@ import javax.swing.*
 fun main() {
     FlatMacDarkLaf.setup()          // Initialise the LAF
 
-    val app = App()                 // Get an app state object
-    val window = MainWindow(app)    // Spawn the UI, passing in the app state
+    val game = Game()                 // Get an app state object
+    val window = MainWindow(game)    // Spawn the UI, passing in the app state
 
     SwingUtilities.invokeLater { window.show() }
 }
@@ -22,9 +27,18 @@ fun main() {
  * @property name the user's name
  * @property score the points earned
  */
-class App {
+class Game {
     var name = "Test"
     var score = 0
+    var health = 100
+    var distanceTravelled = 0
+
+    val cards = listOf( // (Name,image,damage,defence,healing,speed)
+        listOf("Axe", "axe.png", 7, 3, 0, 0),
+        listOf("Shield", "shield.png", 0, 10),
+        listOf("Health Potion", "shield.png", 0, 0, 50, 0),
+        listOf("Speed Potion", "shield.png", 0, 0, 0, 5)
+    )
 
     fun scorePoints(points: Int) {
         score += points
@@ -43,11 +57,14 @@ class App {
 /**
  * Main UI window, handles user clicks, etc.
  *
- * @param app the app state object
+ * @param Game the game state object
  */
-class MainWindow(val app: App) {
+class MainWindow(val game: Game) {
     val frame = JFrame("WINDOW TITLE")
     private val panel = JPanel().apply { layout = null }
+
+    private val locationLabel = JLabel()
+    private val locationIcon = ImageIcon(ClassLoader.getSystemResource("images/village.png"))
 
     private val titleLabel = JLabel("APP TITLE")
 
@@ -55,7 +72,7 @@ class MainWindow(val app: App) {
     private val clickButton = JButton("Click Me!")
     private val infoButton = JButton("Info")
 
-    private val infoWindow = InfoWindow(this, app)      // Pass app state to dialog too
+    private val infoWindow = InfoWindow(this, game)      // Pass app state to dialog too
 
     init {
         setupLayout()
@@ -66,17 +83,15 @@ class MainWindow(val app: App) {
     }
 
     private fun setupLayout() {
-        panel.preferredSize = java.awt.Dimension(400, 220)
+        panel.preferredSize = java.awt.Dimension(1600, 420)
 
         titleLabel.setBounds(30, 30, 340, 30)
         infoLabel.setBounds(30, 90, 340, 30)
         clickButton.setBounds(30, 150, 240, 40)
         infoButton.setBounds(300, 150, 70, 40)
 
-        panel.add(titleLabel)
-        panel.add(infoLabel)
-        panel.add(clickButton)
-        panel.add(infoButton)
+        locationLabel.setBounds(500, 10, 600, 400)
+        panel.add(locationLabel)
     }
 
     private fun setupStyles() {
@@ -87,6 +102,8 @@ class MainWindow(val app: App) {
         clickButton.background = Color(0xcc0055)
 
         infoButton.font = Font(Font.SANS_SERIF, Font.PLAIN, 20)
+
+        locationLabel.icon = locationIcon
     }
 
     private fun setupWindow() {
@@ -103,7 +120,7 @@ class MainWindow(val app: App) {
     }
 
     private fun handleMainClick() {
-        app.scorePoints(1000)       // Update the app state
+        game.scorePoints(1000)       // Update the app state
         updateUI()                  // Update this window UI to reflect this
     }
 
@@ -112,9 +129,9 @@ class MainWindow(val app: App) {
     }
 
     fun updateUI() {
-        infoLabel.text = "User ${app.name} has ${app.score} points"
+        infoLabel.text = "User ${game.name} has ${game.score} points"
 
-        if (app.maxScoreReached()) {
+        if (game.maxScoreReached()) {
             clickButton.text = "No More!"
             clickButton.isEnabled = false
         } else {
@@ -138,7 +155,7 @@ class MainWindow(val app: App) {
  * @param owner the parent frame, used to position and layer the dialog correctly
  * @param app the app state object
  */
-class InfoWindow(val owner: MainWindow, val app: App) {
+class InfoWindow(val owner: MainWindow, val game: Game) {
     private val dialog = JDialog(owner.frame, "DIALOG TITLE", false)
     private val panel = JPanel().apply { layout = null }
 
@@ -180,15 +197,15 @@ class InfoWindow(val owner: MainWindow, val app: App) {
     }
 
     private fun handleResetClick() {
-        app.resetScore()    // Update the app state
+        game.resetScore()    // Update the app state
         owner.updateUI()    // Update the UI to reflect this, via the main window
     }
 
     fun updateUI() {
         // Use app properties to display state
-        infoLabel.text = "<html>User: ${app.name}<br>Score: ${app.score} points"
+        infoLabel.text = "<html>User: ${game.name}<br>Score: ${game.score} points"
 
-        resetButton.isEnabled = app.score > 0
+        resetButton.isEnabled = game.score > 0
     }
 
     fun show() {
@@ -199,5 +216,12 @@ class InfoWindow(val owner: MainWindow, val app: App) {
         )
 
         dialog.isVisible = true
+    }
+}
+
+class Card(game: Game) {
+
+    init {
+        val name = game.cards[Random.nextInt(game.cards.size)][0]
     }
 }
