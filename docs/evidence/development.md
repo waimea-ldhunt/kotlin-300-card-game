@@ -10,19 +10,19 @@ The development log captures key moments in your application development:
 
 ---
 
-## Date: xx/xx/20xx
+## Date: 20/03/2026
 
-Example description and notes. Example description and notes. Example description and notes. Example description and notes. Example description and notes. Example description and notes.
+Found location images and setup initial location image.
 
-![example.png](screenshots/example.png)
+![example.png](screenshots/initialLocation.png)
 
 ---
 
-## Date: xx/xx/20xx
+## Date: 23/03/2026
 
-Example description and notes. Example description and notes. Example description and notes. Example description and notes. Example description and notes. Example description and notes.
+Added Healthbars and improved location system
 
-![example.png](screenshots/example.png)
+![example.png](screenshots/health.png)
 
 ---
 
