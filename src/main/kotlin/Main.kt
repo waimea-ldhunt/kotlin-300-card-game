@@ -35,7 +35,8 @@ class Game {
 
     val map = setupMap(setupEnemies())
     var location = map[0][0]
-    var lastLocation = 0
+
+    var enemy = location.possibleEnemies[0]
 
     val deck = setupDeck()
     val hand = mutableListOf<Card>()
@@ -44,36 +45,44 @@ class Game {
         val map = mutableListOf<List<Location>>()
 
 
-        val village = Location("The Village", "village.png","", listOf())
+        val village = Location("The Village", "village.png","", mutableListOf(enemies[0]))
         map.add(listOf(village))
 
         //Temperate biomes (2 out of 3 are visible)
-        val meadow = Location("Sunlit Meadow", "meadow.png","", listOf(enemies[0]))
-        val forest = Location("Deep Forest", "forest.png","", listOf())
-        val river = Location("Rushing River", "river.png","", listOf(enemies[0], enemies[1]))
+        val meadow = Location("Sunlit Meadow", "meadow.png","", mutableListOf(enemies[1]))
+        val forest = Location("Deep Forest", "forest.png","", mutableListOf(enemies[1]))
+        val river = Location("Rushing River", "river.png","", mutableListOf(enemies[1]))
         map.add(listOf(meadow,forest,river).shuffled()) //randomised list of each area, only index 0 and 1 are used
 
         //Cold biomes (2 out of 3 are visible)
-        val mountains = Location("Winter Hills", "mountains.png","", listOf())
-        val snowForest = Location("Snowy Forest", "snow-forest.png","", listOf())
-        val summit = Location("Frosted Peak", "summit.png","", listOf())
+        val mountains = Location("Winter Hills", "mountains.png","", mutableListOf())
+        val snowForest = Location("Snowy Forest", "snow-forest.png","", mutableListOf())
+        val summit = Location("Frosted Peak", "summit.png","", mutableListOf())
         map.add(listOf(snowForest,mountains,summit).shuffled()) //randomised list of each area, only index 0 and 1 are used
 
-        //Maybe add another temperate section here
+        //Wet biomes (2 out of 3 are visible)
+        val jungle = Location("Humid Jungle", "jungle.png","", mutableListOf())
+        val wetland = Location("Muddy Wetland", "wetland.png","", mutableListOf())
+        val lake = Location("Serene Lake", "lake.png","", mutableListOf())
+        map.add(listOf(jungle, wetland, lake).shuffled()) //randomised list of each area, only index 0 and 1 are used
 
         //Warm biomes (2 out of 3 are visible)
-        val beach = Location("Sunset Beach", "beach.png","", listOf())
-        val desert = Location("Burning Desert", "desert.png","", listOf())
-        val canyon = Location("Scorched Gorge", "canyon.png","", listOf(enemies[0],enemies[1]))
+        val beach = Location("Sunset Beach", "beach.png","", mutableListOf())
+        val desert = Location("Burning Desert", "desert.png","", mutableListOf())
+        val canyon = Location("Scorched Gorge", "canyon.png","", mutableListOf(enemies[1]))
         map.add(listOf(beach, desert, canyon).shuffled()) //randomised list of each area, only index 0 and 1 are used
 
         //The second of the mysterious lands
-        val foggySea = Location("Foggy Sea", "sea.png","", listOf())
+        val foggySea = Location("Foggy Sea", "sea.png","", mutableListOf())
         map.add(listOf(foggySea,foggySea)) //player can only travel to this location
 
         //The second of the mysterious lands
-        val strangeLand = Location("Strange Land", "land.png","", listOf())
+        val strangeLand = Location("Strange Land", "land.png","", mutableListOf())
         map.add(listOf(strangeLand,strangeLand)) //player can only travel to this location
+
+        //The final of the mysterious lands
+        val lostRealm = Location("The Lost Realm", "lost-realm.png","", mutableListOf())
+        map.add(listOf(lostRealm,lostRealm)) //player can only travel to this location
 
         return map
     }
@@ -91,11 +100,15 @@ class Game {
     fun setupEnemies(): List<Enemy> {
         val enemies = mutableListOf<Enemy>()
 
-        val leo = Enemy("Leo","leo.png",100,10,5)                      //0
-        val redOx = Enemy("Red Ox","redox.png",160, 4, 4)              //1
+        val stranger = Enemy("Stranger","stranger.png",999,999,999)    //0
+        val leo = Enemy("Leo","leo.png",100,10,5)                      //1
+        val redOx = Enemy("Red Ox","redox.png",160, 4, 4)              //2
 
+        val giantSquid = Enemy("Giant Squid", "squid.png",150,8,2)
+        val boss = Enemy("Memory Thief","thief.png",365, 10, 10)
+
+        enemies.add(stranger)
         enemies.add(leo)
-        enemies.add(redOx)
 
         return enemies
     }
@@ -105,7 +118,11 @@ class Game {
             'A' -> location = map[(distanceTravelled/100)+1][0]
             'B' -> location = map[(distanceTravelled/100)+1][1]
         }
+
+        phase = 'B'
+
         distanceTravelled += 100
+        enemy = location.possibleEnemies[(0..<location.possibleEnemies.size).random()]
     }
 }
 
@@ -123,7 +140,8 @@ class MainWindow(val game: Game) {
     private val locationImageLabel = JLabel()
     private var locationIcon = ImageIcon(game.location.icon)
 
-
+    private val enemyImageLabel = JLabel()
+    private var enemyIcon = ImageIcon(game.enemy.icon)
 
     private val healthBar = JProgressBar(0, 100)
     private val healthBarLabel = JLabel("Health")
@@ -148,6 +166,9 @@ class MainWindow(val game: Game) {
         locationLabel.setBounds(1110, 200, 480, 50)
 
         locationImageLabel.setBounds(500, 10, 600, 400)
+
+        enemyImageLabel.setBounds(500, 10, 600, 400)
+
         healthBar.setBounds(10, 10, 480, 50)
         healthBarLabel.setBounds(10, 10, 480, 50)
 
@@ -158,6 +179,7 @@ class MainWindow(val game: Game) {
         buttonB.setBounds(250, 200, 230, 50)
 
         pane.add(locationLabel)
+        pane.add(enemyImageLabel, JLayeredPane.DEFAULT_LAYER + 1)
         pane.add(locationImageLabel)
         pane.add(healthBar)
         pane.add(healthBarLabel, JLayeredPane.DEFAULT_LAYER + 1)
@@ -173,6 +195,10 @@ class MainWindow(val game: Game) {
         locationLabel.font = Font("SANS_SERIF", Font.BOLD, 20)
 
         locationImageLabel.icon = locationIcon
+
+        enemyImageLabel.horizontalAlignment = SwingConstants.CENTER
+        enemyImageLabel.verticalAlignment = SwingConstants.CENTER
+        enemyImageLabel.icon = enemyIcon
 
         healthBar.value = 100
         healthBar.foreground = Color.RED
@@ -212,10 +238,20 @@ class MainWindow(val game: Game) {
             'T' -> {
                 buttonA.text = "NW"
                 buttonB.text = "NE"
+
+                enemyBar.isVisible = false
+                enemyBarLabel.isVisible = false
             }
             'B' -> {
                 buttonA.text = "Fight"
                 buttonB.text = "Flee"
+
+                enemyBar.isVisible = true
+                enemyBarLabel.isVisible = true
+                enemyBarLabel.text = game.enemy.name
+
+                enemyIcon = ImageIcon(game.enemy.icon)
+                enemyImageLabel.icon = enemyIcon
             }
         }
     }
@@ -272,7 +308,7 @@ class CardWindow(owner: MainWindow, game: Game, card: Card) {}
 
 
 
-class Location(val name: String, val image: String, val description: String, val possibleEnemies: List<Enemy>) {
+class Location(val name: String, val image: String, val description: String, val possibleEnemies: MutableList<Enemy>) {
     val icon = ClassLoader.getSystemResource("images/locations/$image")
 }
 
@@ -281,5 +317,6 @@ class Card(val name: String, val image: String, val effect: String, val intensit
 }
 
 class Enemy(val name: String, val image: String, val health: Int, val attack: Int, val speed: Int) {
+    val icon = ClassLoader.getSystemResource("images/enemies/$image")
     fun attack() {}
 }
