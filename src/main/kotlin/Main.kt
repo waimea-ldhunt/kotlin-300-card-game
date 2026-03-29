@@ -2,7 +2,10 @@ import com.formdev.flatlaf.themes.FlatMacDarkLaf
 import java.awt.Color
 import java.awt.Font
 import java.awt.Image
+import java.awt.Window
 import javax.swing.*
+import javax.swing.BorderFactory.createLineBorder
+import kotlin.math.max
 import kotlin.random.Random
 
 fun ImageIcon.scaled(width: Int, height: Int): ImageIcon =
@@ -18,6 +21,8 @@ fun main() {
     val window = MainWindow(game)    // Spawn the UI, passing in the app state
 
     SwingUtilities.invokeLater { window.show() }
+
+    val card = CardWindow(window,game,game.deck[0])
 }
 
 
@@ -90,7 +95,8 @@ class Game {
     fun setupDeck(): List<Card> {
         val deck = mutableListOf<Card>()
 
-        val axe = Card("Axe", "axe.png", "DMG", 7)
+        val axe = Card("Axe", "axe.png", "DMG", 7, false)
+        val dodgeBook = Card("The art of Dodging", "axe.png", "DGE", 70, true)
 
         deck.add(axe)
 
@@ -152,6 +158,8 @@ class MainWindow(val game: Game) {
     private val buttonA = JButton("Tutorial")
     private val buttonB = JButton("Skip")
 
+    private val cardArea = JLabel("PLACE")
+
     init {
         setupLayout()
         setupStyles()
@@ -178,6 +186,8 @@ class MainWindow(val game: Game) {
         buttonA.setBounds(10, 200, 230, 50)
         buttonB.setBounds(250, 200, 230, 50)
 
+        cardArea.setBounds(1390, 70, 200, 330)
+
         pane.add(locationLabel)
         pane.add(enemyImageLabel, JLayeredPane.DEFAULT_LAYER + 1)
         pane.add(locationImageLabel)
@@ -187,6 +197,7 @@ class MainWindow(val game: Game) {
         pane.add(enemyBarLabel, JLayeredPane.DEFAULT_LAYER + 1)
         pane.add(buttonA)
         pane.add(buttonB)
+        pane.add(cardArea)
 
     }
 
@@ -213,6 +224,9 @@ class MainWindow(val game: Game) {
         enemyBarLabel.horizontalAlignment = SwingConstants.CENTER
         enemyBarLabel.font = Font("SANS_SERIF", Font.BOLD, 20)
         enemyBarLabel.isVisible = false
+
+        cardArea.border = BorderFactory.createLineBorder(Color.RED, 5)
+        cardArea.font = Font("SANS_SERIF", Font.BOLD, 40)
     }
 
     private fun setupWindow() {
@@ -247,6 +261,9 @@ class MainWindow(val game: Game) {
                 buttonB.text = "Flee"
 
                 enemyBar.isVisible = true
+                enemyBar.maximum = game.enemy.maxHealth
+                enemyBar.value = game.enemy.health
+
                 enemyBarLabel.isVisible = true
                 enemyBarLabel.text = game.enemy.name
 
@@ -304,7 +321,43 @@ class MainWindow(val game: Game) {
  * @param game the app state object
  */
 
-class CardWindow(owner: MainWindow, game: Game, card: Card) {}
+class CardWindow(owner: MainWindow, game: Game, card: Card) {
+    val frame = JFrame(card.name)
+    val panel = JPanel().apply { layout = null }
+
+    init {
+        setupLayout()
+        setupStyles()
+        setupActions()
+        setupWindow()
+        updateUI()
+        frame.isVisible = true
+    }
+
+    fun setupLayout(){
+        panel.preferredSize = java.awt.Dimension(200, 300) // the window header is an extra 30px tall
+    }
+
+    fun setupStyles(){
+
+    }
+
+    fun setupActions(){
+        
+    }
+
+    fun setupWindow(){
+        frame.isResizable = false                           // Can't resize
+        frame.contentPane = panel                           // Define the main content
+        frame.pack()
+        frame.setLocationRelativeTo(null)
+    }
+
+    fun updateUI(){
+
+    }
+
+}
 
 
 
@@ -312,11 +365,11 @@ class Location(val name: String, val image: String, val description: String, val
     val icon = ClassLoader.getSystemResource("images/locations/$image")
 }
 
-class Card(val name: String, val image: String, val effect: String, val intensity: Int) {
+class Card(val name: String, val image: String, val effect: String, val intensity: Int, val legendary: Boolean) {
     val icon = ClassLoader.getSystemResource("images/cards/$image")
 }
 
-class Enemy(val name: String, val image: String, val health: Int, val attack: Int, val speed: Int) {
+class Enemy(val name: String, val image: String, val maxHealth: Int, val attack: Int, val speed: Int) {
     val icon = ClassLoader.getSystemResource("images/enemies/$image")
-    fun attack() {}
+    val health = maxHealth
 }
