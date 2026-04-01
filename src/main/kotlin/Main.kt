@@ -1,8 +1,8 @@
 import com.formdev.flatlaf.themes.FlatMacDarkLaf
-import java.awt.Color
-import java.awt.Font
-import java.awt.Image
-import java.awt.Window
+import com.sun.java.accessibility.util.AWTEventMonitor.addComponentListener
+import com.sun.java.accessibility.util.AWTEventMonitor.addMouseListener
+import java.awt.*
+import java.awt.event.*
 import javax.swing.*
 import javax.swing.BorderFactory.createLineBorder
 import kotlin.math.max
@@ -33,22 +33,58 @@ fun main() {
  * @property score the points earned
  */
 class Game {
-    var name = "Test"
     var distanceTravelled = 0
     var health = 100
+    var dodgeChance = 20
+
+    val gameLog = mutableListOf<String>()
+
     var phase = 'I' //[I]ntro, [T]ravel, [B]attle
+    var isPlayerTurn = false
 
-    val map = setupMap(setupEnemies())
-    var location = map[0][0]
-
-    var enemy = location.possibleEnemies[0]
-
-    val deck = setupDeck()
     val hand = mutableListOf<Card>()
+    var legendaryCount = 0
 
-    fun setupMap(enemies: List<Enemy>): List<List<Location>> {
-        val map = mutableListOf<List<Location>>()
+    lateinit var location: Location
+    lateinit var enemy: Enemy
 
+    val deck = mutableListOf<Card>()
+    val map = mutableListOf<List<Location>>()
+    val enemies = mutableListOf<Enemy>()
+
+    init {
+        setupGame()
+    }
+
+    fun setupGame() {
+        /*
+        * SETTING UP CARDS
+        * */
+
+        val axe = Card("Axe", "axe.png", "Damage", 7, false)
+        val dodgeBook = Card("The art of Dodging", "axe.png", "Dodge", 70, true)
+
+        deck.add(axe)
+
+        /*
+        * SETTING UP ENEMIES
+        * */
+
+        val stranger = Enemy("Stranger","kraken.png",999,999,999, "", null)                               //0
+        val leo = Enemy("Leo","leo.png",100,10,5, "Pounce", SpecialAbility("Roar", "Heal"))                //1
+        val redOx = Enemy("Red Ox","redox.png",160, 4, 4, "Reduce", SpecialAbility("Oxidixse","Strong Heal"))                                      //2
+
+        val giantSquid = Enemy("Giant Squid", "kraken.png",150,2, 2, "Tentacle Rush", SpecialAbility("Devour","Devour"))
+        val boss = Enemy("Memory Thief","thief.gif",365, 10,10, "Distort", SpecialAbility("Power Steal","Power Steal"))
+
+        enemies.add(stranger)
+        enemies.add(leo)
+
+        enemy = stranger
+
+        /*
+        * SETTING UP LOCATIONS
+        * */
 
         val village = Location("The Village", "village.png","", mutableListOf(enemies[0]))
         map.add(listOf(village))
@@ -89,34 +125,7 @@ class Game {
         val lostRealm = Location("The Lost Realm", "lost-realm.png","", mutableListOf())
         map.add(listOf(lostRealm,lostRealm)) //player can only travel to this location
 
-        return map
-    }
-
-    fun setupDeck(): List<Card> {
-        val deck = mutableListOf<Card>()
-
-        val axe = Card("Axe", "axe.png", "DMG", 7, false)
-        val dodgeBook = Card("The art of Dodging", "axe.png", "DGE", 70, true)
-
-        deck.add(axe)
-
-        return deck
-    }
-
-    fun setupEnemies(): List<Enemy> {
-        val enemies = mutableListOf<Enemy>()
-
-        val stranger = Enemy("Stranger","stranger.png",999,999,999)    //0
-        val leo = Enemy("Leo","leo.png",100,10,5)                      //1
-        val redOx = Enemy("Red Ox","redox.png",160, 4, 4)              //2
-
-        val giantSquid = Enemy("Giant Squid", "squid.png",150,8,2)
-        val boss = Enemy("Memory Thief","thief.png",365, 10, 10)
-
-        enemies.add(stranger)
-        enemies.add(leo)
-
-        return enemies
+        location = village
     }
 
     fun travel(choice: Char) {
@@ -128,7 +137,23 @@ class Game {
         phase = 'B'
 
         distanceTravelled += 100
-        enemy = location.possibleEnemies[(0..<location.possibleEnemies.size).random()]
+        enemy = location.possibleEnemies[location.possibleEnemies.indices.random()]
+    }
+
+    fun log(str: String) {
+        gameLog.add(str)
+    }
+
+    fun getRandomNLCard(cards: List<Card>): Card{
+        while (true) {
+            val card = cards[cards.indices.random()]
+            if (card.legendary) continue
+            else return card
+        }
+    }
+
+    fun enemyTurn() {
+        log("$enemy uses attack ${enemy.attackName}")
     }
 }
 
@@ -159,6 +184,9 @@ class MainWindow(val game: Game) {
     private val buttonB = JButton("Skip")
 
     private val cardArea = JLabel("PLACE")
+
+    var windowLocation = frame.location
+    val placeArea = Point(1390, 100)
 
     init {
         setupLayout()
@@ -234,12 +262,21 @@ class MainWindow(val game: Game) {
         frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE  // Exit upon window close
         frame.contentPane = pane                           // Define the main content
         frame.pack()
-        frame.setLocationRelativeTo(null)                   // Centre on the screen
+        frame.setLocation(((Toolkit.getDefaultToolkit().screenSize.width - frame.width) / 2),0)              // Centre on the screen
+        windowLocation = frame.location
     }
 
     private fun setupActions() {
         buttonA.addActionListener { handleA() }
         buttonB.addActionListener { handleB() }
+
+        frame.addComponentListener(object: ComponentAdapter(){
+            override fun componentMoved(e: ComponentEvent?) {
+                windowLocation = frame.location
+                super.componentMoved(e)
+            }
+        })
+
     }
 
 
@@ -247,6 +284,8 @@ class MainWindow(val game: Game) {
         locationLabel.text = game.location.name
         locationIcon = ImageIcon(game.location.icon)
         locationImageLabel.icon = locationIcon
+
+        cardArea.isVisible = game.isPlayerTurn
 
         when (game.phase) {
             'T' -> {
@@ -321,7 +360,7 @@ class MainWindow(val game: Game) {
  * @param game the app state object
  */
 
-class CardWindow(owner: MainWindow, game: Game, card: Card) {
+class CardWindow(val owner: MainWindow, val game: Game, var card: Card) {
     val frame = JFrame(card.name)
     val panel = JPanel().apply { layout = null }
 
@@ -343,20 +382,43 @@ class CardWindow(owner: MainWindow, game: Game, card: Card) {
     }
 
     fun setupActions(){
-        
+        frame.addComponentListener(object: ComponentAdapter(){
+            override fun componentMoved(e: ComponentEvent?) {
+                val location = frame.location
+                super.componentMoved(e)
+                //Check if card is in place area
+                if (game.isPlayerTurn) {
+                    val placeLocation = Point(owner.windowLocation.x + owner.placeArea.x,owner.windowLocation.y + owner.placeArea.y)
+                    if (location.x in (placeLocation.x-5..placeLocation.x+5) &&
+                        location.y in (placeLocation.y-5..placeLocation.y+5)) {
+                        //play()
+                    }
+                }
+            }
+        })
     }
 
     fun setupWindow(){
         frame.isResizable = false                           // Can't resize
         frame.contentPane = panel                           // Define the main content
         frame.pack()
-        frame.setLocationRelativeTo(null)
+        frame.setLocation(((Toolkit.getDefaultToolkit().screenSize.width - frame.width) / 2),(owner.frame.getLocation().y + 460))
     }
 
     fun updateUI(){
-
     }
 
+    fun play(){
+        //Card is placed
+        println("Placed")
+
+        if (card.playCard(game)) frame.dispose()
+        else {
+          card = game.getRandomNLCard(game.deck)
+          updateUI()
+          frame.setLocation((owner.frame.getLocation().x + 1400),(owner.frame.getLocation().y + 460))
+        }
+    }
 }
 
 
@@ -367,9 +429,52 @@ class Location(val name: String, val image: String, val description: String, val
 
 class Card(val name: String, val image: String, val effect: String, val intensity: Int, val legendary: Boolean) {
     val icon = ClassLoader.getSystemResource("images/cards/$image")
+
+    fun playCard(game: Game): Boolean {
+        game.log("You played card: $name")
+        when (effect) {
+            "Damage" -> game.enemy.health -= intensity
+            "Dodge" -> game.dodgeChance += intensity
+        }
+        if (legendary) game.legendaryCount --
+        return legendary
+    }
 }
 
-class Enemy(val name: String, val image: String, val maxHealth: Int, val attack: Int, val speed: Int) {
+class Enemy(val name: String, val image: String, val maxHealth: Int, var attack: Int, var speed: Int, val attackName: String, val specialAbility: SpecialAbility?) {
     val icon = ClassLoader.getSystemResource("images/enemies/$image")
-    val health = maxHealth
+    var health = maxHealth
+}
+
+class SpecialAbility(val name: String, val effect: String){
+    fun doSpecialAttack(game: Game) {
+        game.log("${game.enemy.name} used special ability: $name")
+        when (effect){
+            "Heal" -> {
+                val effect = (3..8).random()
+                game.enemy.health += effect
+                game.log("${game.enemy.name} healed $effect health!")
+
+            }
+            "Strong Heal" -> {
+                val effect = (10..16).random()
+                game.enemy.health += effect
+                game.log("${game.enemy.name} healed $effect health!")
+            }
+            "Accelerate" -> {
+                game.enemy.speed += 3
+                game.log("${game.enemy.name} got faster!")
+            }
+            "Power Up" -> {
+                game.enemy.attack += 3
+                game.log("${game.enemy.name} got stronger!")
+            }
+            "Devour" -> {
+
+            }
+            "Power Steal" -> {
+
+            }
+        }
+    }
 }
