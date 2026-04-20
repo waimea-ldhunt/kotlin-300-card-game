@@ -2,6 +2,8 @@ import com.formdev.flatlaf.themes.FlatMacDarkLaf
 import java.awt.*
 import java.awt.event.*
 import javax.swing.*
+import kotlin.math.max
+import kotlin.math.sin
 
 fun ImageIcon.scaled(width: Int, height: Int): ImageIcon =
     ImageIcon(image.getScaledInstance(width, height, Image.SCALE_SMOOTH))
@@ -17,7 +19,8 @@ fun main() {
 
     SwingUtilities.invokeLater { window.show() }
 
-    val card = CardWindow(window,game,game.deck[0])
+    val card1 = CardWindow(window,game,game.deck[0])
+    val card2 = CardWindow(window,game,game.deck[1])
 }
 
 
@@ -29,8 +32,9 @@ fun main() {
  */
 class Game {
     private var distanceTravelled = 0
-    private var health = 100
-    private var speed = 5
+    var maxHealth = 100
+    var health = maxHealth
+    var speed = 5
     var dodgeChance = 20
 
     val gameLog = mutableListOf<String>()
@@ -57,9 +61,17 @@ class Game {
         * */
 
         val axe = Card("Axe", "axe.png", "Damage", 7, false)
-        val dodgeBook = Card("The art of Dodging", "axe.png", "Dodge", 70, true)
+        val sword = Card("Sword", "placeholder.png", "Damage", 10, false)
+
+        val weakHealingPotion = Card("Lesser Potion of Healing","placeholder.png","Heal", 30, false)
+        val strongHealingPotion = Card("Greater Potion of Healing","placeholder.png","Heal", 50, false)
+
+        val miraclePotion = Card("Lesser Potion of Miracles", "placeholder.png", "Heal", 100, true)
+        val dodgeBook = Card("The art of Dodging", "placeholder.png", "Dodge", 70, true)
+        val nuke = Card("Nuclear Bomb", "placeholder.png", "Damage", 100, true)
 
         deck.add(axe)
+        deck.add(sword)
 
         /*
         * SETTING UP ENEMIES
@@ -67,7 +79,7 @@ class Game {
 
         val stranger = Enemy("Stranger","stranger.png",365,10,999, "Donate", null)
 
-        val ant = Enemy("Ant","ant.png",1,3,10,"Bite", null)
+        val ant = Enemy("Resilient Ant","ant.png",10,3,10,"Bite", null)
 
         val walkingFish = Enemy("Walking Fish","walkingFish.png",70,6,5,"Fish Slap",SpecialAbility("Slippery","Accelerate"))
 
@@ -158,6 +170,8 @@ class Game {
         checkLoss()
         enemy.specialAbility?.doSpecialAttack(game)
         checkLoss()
+        phase = 'P'
+        isPlayerTurn = true
     }
 
     fun tryFlee(): Boolean {
@@ -415,26 +429,43 @@ class MainWindow(val game: Game) {
                     game.phase = 'T'
                     updateUI()
                 } else {
-                    game.phase = 'E'
-                    updateUI()
-                    game.enemyTurn(game)
-                    game.phase = 'P'
-                    game.isPlayerTurn = true
-                    updateUI()
+                    handleEnemyTurn()
                 }
             }
 
         }
     }
 
-    fun handleCardPlaced() {
+    fun handleCardPlaced(wasDamaged: Boolean) {
+        if (wasDamaged) shakeEnemy()
+        handleEnemyTurn()
+    }
+
+    fun handleEnemyTurn() {
         game.isPlayerTurn = false
         game.phase = 'E'
         updateUI()
         game.enemyTurn(game)
-        game.phase = 'P'
-        updateUI()
+    }
 
+    private fun shakeEnemy() {
+        val originalLocation = enemyImageLabel.location
+        val startTime = System.currentTimeMillis()
+        val shakeDistance = 10
+        val shakeDuration = 500
+        val shakeCycle = 50
+
+        val timer = Timer(shakeCycle) {
+            val elapsed = System.currentTimeMillis() - startTime
+            if (elapsed > shakeDuration) {
+                enemyImageLabel.location = originalLocation
+                (it.source as Timer).stop()
+            } else {
+                val offset = (sin(elapsed.toDouble() * 0.1) * shakeDistance).toInt()
+                enemyImageLabel.location = Point(originalLocation.x + offset, originalLocation.y)
+            }
+        }
+        timer.start()
     }
 }
 
@@ -501,7 +532,11 @@ class CardWindow(val owner: MainWindow, val game: Game, var card: Card) {
             card = game.getRandomNLCard(game.deck)
             frame.setLocation((owner.frame.location.x + 1400),(owner.frame.location.y + 460))
             updateUI()
-            owner.handleCardPlaced()
+            val isAttack = when (card.effect) {
+                "Damage" -> true
+                else -> false
+            }
+            owner.handleCardPlaced(isAttack)
         }
     }
 }
@@ -512,18 +547,46 @@ class Location(val name: String, private val image: String, val description: Str
     val icon = ClassLoader.getSystemResource("images/locations/$image")
 }
 
-class Card(val name: String, private val image: String, private val effect: String, private val intensity: Int, val legendary: Boolean) {
+class Card(val name: String, private val image: String, val effect: String, private val intensity: Int, val legendary: Boolean) {
     val icon = ClassLoader.getSystemResource("images/cards/$image")
 
     fun playCard(game: Game): Boolean {
         game.log("You played card: $name")
         when (effect) {
-            "Damage" -> game.enemy.health -= intensity
-            "Dodge" -> game.dodgeChance += intensity
+            "Damage" -> {
+                game.enemy.health -= intensity
+
+                game.log("${game.enemy.name} Took $intensity Damage")
+            }
+            "Heal" -> {
+                game.health += intensity
+                if (game.health > game.maxHealth) game.health = game.maxHealth
+
+                game.log("You Healed $intensity Health")
+            }
+
+            //Unique Legendary Effects
+            "Miracle" -> {
+                game.health += intensity
+                game.maxHealth += intensity/2
+                if (game.health > game.maxHealth) game.health = game.maxHealth
+                game.speed += 5
+
+                game.log("You Healed $intensity Health")
+                game.log("Your Maximum Health Increased")
+                game.log("Your Speed Increased")
+            }
+
+            "Dodge" -> {
+                game.dodgeChance += intensity
+
+                game.log("Your Dodge Skill Increased")
+            }
         }
         if (legendary) game.legendaryCount --
         return legendary
     }
+
 }
 
 class Enemy(val name: String, private val image: String, var maxHealth: Int, var attack: Int, var speed: Int, val attackName: String, val specialAbility: SpecialAbility?) {
