@@ -2,7 +2,9 @@ import com.formdev.flatlaf.themes.FlatMacDarkLaf
 import java.awt.*
 import java.awt.event.*
 import javax.swing.*
+import kotlin.math.log
 import kotlin.math.sin
+import kotlin.system.exitProcess
 
 fun ImageIcon.scaled(width: Int, height: Int): ImageIcon =
     ImageIcon(image.getScaledInstance(width, height, Image.SCALE_SMOOTH))
@@ -85,13 +87,14 @@ class Game {
         val stranger = Enemy("Stranger","stranger.png",365,10..10,999, "Donate", null)
 
         val ant = Enemy("Resilient Ant","ant.png",10,2..4,10,"Bite", null)
+        val flyingSnake = Enemy("Flying Snake","flyingSnake.png", 16, 1..5, 10, "Snakebite", null)
+
+        val micheal = Enemy("Micheal, Destroyer of Worlds", "micheal/png",32, 3..5,8, "Cuteness Overdrive" , SpecialAbility("Obliterate Planet", "Destroy Planet"))
 
         val walkingFish = Enemy("Walking Fish","walkingFish.png",70,6..9,5,"Fish Slap",SpecialAbility("Slippery","Accelerate"))
 
-
-
         val leo = Enemy("Leo","leo.png",30,4..8,5, "Pounce", SpecialAbility("Roar", "Heal+Power Up"))
-        val redOx = Enemy("Red Ox","redox.png",45, 8..12, 4, "Reduce", SpecialAbility("Oxidise","Strong Heal"))
+        val redOx = Enemy("Red Ox","redOx.png",45, 8..12, 4, "Reduce", SpecialAbility("Oxidise","Strong Heal"))
 
         val kraken = Enemy("Giant Squid", "kraken.png",130,2..2, 2, "Tentacle Rush", SpecialAbility("Devour","Devour"))
         val boss = Enemy("Memory Thief","thief.gif",365, 9..11,999, "Distort", SpecialAbility("Power Steal","Power Steal"))
@@ -106,16 +109,16 @@ class Game {
         map.add(listOf(village))
 
         //Temperate biomes (2 out of 3 are visible)
-        val meadow = Location("Sunlit Meadow", "meadow.png","", mutableListOf(ant))
-        val forest = Location("Deep Forest", "forest.png","", mutableListOf(ant))
-        val river = Location("Rushing River", "river.png","", mutableListOf(ant))
+        val meadow = Location("Sunlit Meadow", "meadow.png","", mutableListOf(ant, flyingSnake))
+        val forest = Location("Deep Forest", "forest.png","", mutableListOf(ant, flyingSnake))
+        val river = Location("Rushing River", "river.png","", mutableListOf(ant, flyingSnake))
         map.add(listOf(meadow,forest,river).shuffled()) //randomised list of each area, only index 0 and 1 are used
 
         //Cold biomes (2 out of 3 are visible)
-        val mountains = Location("Winter Hills", "mountains.png","", mutableListOf())
-        val snowForest = Location("Snowy Forest", "snow-forest.png","", mutableListOf())
-        val summit = Location("Frosted Peak", "summit.png","", mutableListOf())
-        map.add(listOf(snowForest,mountains,summit).shuffled()) //randomised list of each area, only index 0 and 1 are used
+        val mountains = Location("Autumn Hills", "mountains.png","", mutableListOf(micheal))
+        val cave = Location("Mysterious Cave", "cave.png","", mutableListOf(micheal))
+        val summit = Location("Frosted Peak", "summit.png","", mutableListOf(micheal))
+        map.add(listOf(cave,mountains,summit).shuffled()) //randomised list of each area, only index 0 and 1 are used
 
         //Wet biomes (2 out of 3 are visible)
         val jungle = Location("Humid Jungle", "jungle.png","", mutableListOf())
@@ -204,6 +207,8 @@ class MainWindow(val game: Game) {
     val frame = JFrame("WINDOW TITLE")
     private val pane = JLayeredPane().apply { layout = null }
 
+    private val quitButton = JButton("Quit")
+
     private val locationLabel = JLabel(game.location.name)
     private val locationImageLabel = JLabel()
     private var locationIcon = ImageIcon(game.location.icon)
@@ -221,6 +226,7 @@ class MainWindow(val game: Game) {
     private val buttonB = JButton("Skip")
 
     private val gameLogText = JTextArea()
+    private val gameLogArea = JScrollPane(gameLogText)
 
     private val cardArea = JLabel("PLACE")
 
@@ -241,6 +247,8 @@ class MainWindow(val game: Game) {
     private fun setupLayout() {
         pane.preferredSize = Dimension(1600, 420)
 
+        quitButton.setBounds(10, 380, 65, 30)
+
         locationLabel.setBounds(1110, 70, 280, 30)
 
         locationImageLabel.setBounds(500, 10, 600, 400)
@@ -256,10 +264,12 @@ class MainWindow(val game: Game) {
         buttonA.setBounds(10, 200, 230, 50)
         buttonB.setBounds(250, 200, 230, 50)
 
-        gameLogText.setBounds(1110, 120, 280, 290)
+        gameLogArea.setBounds(1110, 120, 280, 290)
+        gameLogText.setBounds(0, 0, 280, 290)
 
         cardArea.setBounds(1390, 80, 200, 330)
 
+        pane.add(quitButton)
         pane.add(locationLabel)
         pane.add(enemyImageLabel, JLayeredPane.DEFAULT_LAYER + 1)
         pane.add(locationImageLabel)
@@ -269,7 +279,7 @@ class MainWindow(val game: Game) {
         pane.add(enemyBarLabel, JLayeredPane.DEFAULT_LAYER + 1)
         pane.add(buttonA)
         pane.add(buttonB)
-        pane.add(gameLogText)
+        pane.add(gameLogArea)
         pane.add(cardArea)
     }
 
@@ -311,12 +321,19 @@ class MainWindow(val game: Game) {
         frame.isResizable = false                           // Can't resize
         frame.contentPane = pane                            // Define the main content
         frame.isUndecorated = true
+        frame.isAlwaysOnTop = true
         frame.pack()
         frame.setLocation(((Toolkit.getDefaultToolkit().screenSize.width - frame.width) / 2),0)              // Centre on the screen
         windowLocation = frame.location
     }
 
     private fun setupActions() {
+        quitButton.addActionListener {
+            if (JOptionPane.showConfirmDialog(frame, "Are you sure you want to Quit?", "Quit", JOptionPane.YES_NO_OPTION) == 0) {
+                exitProcess(0)
+            }
+        }
+
         buttonA.addActionListener { handleA() }
         buttonB.addActionListener { handleB() }
 
@@ -338,10 +355,13 @@ class MainWindow(val game: Game) {
 
         cardArea.isVisible = game.isPlayerTurn
 
+        //20 lines
         gameLogText.text = null
         for (line in game.gameLog) {
             gameLogText.append("$line\n")
         }
+        gameLogText.text = gameLogText.text
+        gameLogText.caretPosition = gameLogText.text.length
 
         healthBar.maximum = game.maxHealth
         healthBar.value = game.health
@@ -432,11 +452,15 @@ class MainWindow(val game: Game) {
             }
 
             'P','S' -> { //Flee
+                game.log("You Tried To Run Away")
                 if (game.tryFlee()) {
-                    updateUI()
+                    game.log("You Escaped!")
+
                     game.phase = 'T'
                     updateUI()
                 } else {
+                    game.log("${game.enemy.name} Caught Up With You!")
+                    updateUI()
                     turnTimer.restart()
                 }
             }
@@ -536,6 +560,7 @@ class CardWindow(val owner: MainWindow, val game: Game, var card: Card) {
         frame.isResizable = false                           // Can't resize
         frame.contentPane = panel                           // Define the main content
         frame.defaultCloseOperation = WindowConstants.DO_NOTHING_ON_CLOSE
+        frame.isAlwaysOnTop = true
         frame.pack()
         frame.setLocation(((Toolkit.getDefaultToolkit().screenSize.width - frame.width) / 2),(owner.frame.getLocation().y + 460))
     }
@@ -644,6 +669,11 @@ class SpecialAbility(private val name: String, private val effects: String){
                 "Power Up" -> {
                     game.enemy.attack = game.enemy.attack.min()+3..game.enemy.attack.max()+3
                     game.log("${game.enemy.name} got stronger!")
+                }
+
+                "Destroy Planet" -> {
+                    game.log("${game.enemy.name} destroyed a distant planet!")
+                    game.log("There is now one less star in the night sky")
                 }
 
                 "Devour" -> {
