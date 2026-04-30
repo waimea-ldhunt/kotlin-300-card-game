@@ -43,7 +43,8 @@ class Game {
         mutableListOf(
             "As you explore the world,\nyou are likely to run into dangerous enemies on the road,\nyou must fight them to continue your journey.",
             "When you encounter an enemy you can either Fight or Flee,\nif you choose to flee but the enemy is faster than you\nthey will catch up and you will be forced to fight.",
-            "In a Fight you will need to use Cards to defend yourself,\nto use a Card, place it in the designated area,\nthe effect specified by that card with occur."
+            "In a Fight you will need to use Cards to defend yourself,\nto use a Card's effect, place it in the designated area.",
+            "If you defeat an enemy you will be rewarded with cards,\nif you are lucky you might even get a Legendary card."
         )
 
     val gameLog = mutableListOf<String>()
@@ -70,7 +71,7 @@ class Game {
         * SETTING UP CARDS
         * */
 
-        val axe = Card("Axe", "axe.png", "Damage", 7, false)
+        val axe = Card("Axe", "placeholder.png", "Damage", 7, false)
         val sword = Card("Sword", "placeholder.png", "Damage", 10, false)
         val bomb = Card("Bomb", "placeholder.png", "Damage", 25, false)
 
@@ -90,7 +91,7 @@ class Game {
 
         /*
         * SETTING UP ENEMIES
-        * */
+        */
 
         val stranger = Enemy("Stranger", "stranger.png", 365, 10..10, 999, "Donate", null)
 
@@ -165,7 +166,7 @@ class Game {
 
         location = village
 
-        log("Welcome!")
+        log("Howdy Stranger!\nI see you are wanting to leave the town,\nwould you like any advice from a seasoned traveller?")
     }
 
     fun travel(choice: Char) {
@@ -249,15 +250,15 @@ class MainWindow(val game: Game) {
     private val enemyBar = JProgressBar(0, 100)
     private val enemyBarLabel = JLabel("Enemy Health")
 
-    private val buttonA = JButton("Tutorial")
-    private val buttonB = JButton("Skip")
+    private val buttonA = JButton("Yes please (Tutorial)")
+    private val buttonB = JButton("I can handle myself")
 
     private val gameLogText = JTextArea()
     private val gameLogArea = JScrollPane(gameLogText)
 
     private val cardArea = JLabel("PLACE")
 
-    var tutorialPosition = 0
+    var tutorialPosition = -1
 
     var windowLocation = frame.location
 
@@ -276,32 +277,32 @@ class MainWindow(val game: Game) {
     }
 
     private fun setupLayout() {
-        pane.preferredSize = Dimension(1600, 420)
+        pane.preferredSize = Dimension(1300, 420)
 
         quitButton.setBounds(10, 380, 65, 30)
 
-        locationLabel.setBounds(1110, 70, 280, 30)
+        locationLabel.setBounds(500, 380, 300, 35)
 
-        locationImageLabel.setBounds(500, 10, 600, 400)
+        locationImageLabel.setBounds(350, 10, 600, 400)
 
-        enemyImageLabel.setBounds(500, 10, 600, 400)
+        enemyImageLabel.setBounds(350, 10, 600, 400)
 
-        healthBar.setBounds(10, 10, 480, 50)
-        healthBarLabel.setBounds(10, 10, 480, 50)
+        healthBar.setBounds(10, 10, 330, 50)
+        healthBarLabel.setBounds(10, 10, 330, 50)
 
-        enemyBar.setBounds(1110, 10, 480, 50)
-        enemyBarLabel.setBounds(1110, 10, 480, 50)
+        enemyBar.setBounds(960, 10, 330, 50)
+        enemyBarLabel.setBounds(960, 10, 330, 50)
 
-        buttonA.setBounds(10, 200, 230, 50)
-        buttonB.setBounds(250, 200, 230, 50)
+        buttonA.setBounds(10, 70, 160, 50)
+        buttonB.setBounds(180, 70, 160, 50)
 
-        gameLogArea.setBounds(1110, 120, 280, 290)
+        gameLogArea.setBounds(10, 130, 330, 250)
         gameLogText.setBounds(0, 0, 280, 290)
 
-        cardArea.setBounds(1390, 80, 200, 330)
+        cardArea.setBounds(1090, 80, 200, 330)
 
         pane.add(quitButton)
-        pane.add(locationLabel)
+        pane.add(locationLabel, JLayeredPane.DEFAULT_LAYER + 2)
         pane.add(enemyImageLabel, JLayeredPane.DEFAULT_LAYER + 1)
         pane.add(locationImageLabel)
         pane.add(healthBar)
@@ -317,6 +318,8 @@ class MainWindow(val game: Game) {
     private fun setupStyles() {
         locationLabel.horizontalAlignment = SwingConstants.CENTER
         locationLabel.font = Font("SANS_SERIF", Font.BOLD, 20)
+        locationLabel.setOpaque(true)
+        locationLabel.background = UIManager.getColor("Panel.background")
 
         locationImageLabel.icon = locationIcon
 
@@ -412,6 +415,13 @@ class MainWindow(val game: Game) {
 
         when (game.phase) {
 
+            GamePhase.TUTORIAL -> {
+                buttonA.text = "Back"
+                buttonA.isEnabled = (tutorialPosition > 0)
+                buttonB.text = "Next"
+                buttonB.isEnabled = true
+            }
+
             GamePhase.TRAVEL -> {
                 buttonA.text = "NW"
                 buttonA.isEnabled = true
@@ -422,13 +432,6 @@ class MainWindow(val game: Game) {
                 enemyBarLabel.isVisible = false
 
                 enemyImageLabel.icon = null
-            }
-
-            GamePhase.TUTORIAL -> {
-                buttonA.text = "Next"
-                buttonA.isEnabled = true
-                buttonB.text = "Back"
-                buttonA.isEnabled = (tutorialPosition > 1)
             }
 
             GamePhase.BATTLESTART -> {
@@ -476,13 +479,14 @@ class MainWindow(val game: Game) {
     private fun handleA() {
         when (game.phase) {
             GamePhase.INTRO -> { //Tutorial
+                game.log("----------\n> Yes please")
                 game.phase = GamePhase.TUTORIAL
                 stepTutorial()
                 updateUI()
             }
 
             GamePhase.TUTORIAL -> {
-                stepTutorial()
+                stepDownTutorial()
                 updateUI()
             }
 
@@ -504,6 +508,8 @@ class MainWindow(val game: Game) {
     private fun handleB() {
         when (game.phase) {
             GamePhase.INTRO -> {
+                game.log("----------\n> I can handle myself\n----------")
+                game.log("Very well then, take these cards as a gift,\n use them to defend yourself if you are in danger")
                 game.hand.add(CardWindow(this, game, game.drawRandomNormalCard()))
                 game.hand.add(CardWindow(this, game, game.drawRandomNormalCard()))
                 game.phase = GamePhase.TRAVEL
@@ -511,7 +517,7 @@ class MainWindow(val game: Game) {
             }
 
             GamePhase.TUTORIAL -> {
-                stepDownTutorial()
+                stepTutorial()
                 updateUI()
             }
 
@@ -542,12 +548,17 @@ class MainWindow(val game: Game) {
 
     private fun stepTutorial() {
         tutorialPosition += 1
-        if (tutorialPosition < 10) { // 10 is temporary tutorial end
+        if (tutorialPosition < 4) {
             game.log("----------")
             game.log(game.tutorialText[tutorialPosition])
-            game.log("----------")
         } else {
-            //end of tutorial
+            game.log("----------")
+            game.log("That is all the advice I have for your journey,\ntake these cards, it is dangerous to go without any.\nGood Luck!")
+            game.log("----------")
+            game.hand.add(CardWindow(this, game, game.drawRandomNormalCard()))
+            game.hand.add(CardWindow(this, game, game.drawRandomNormalCard()))
+            game.phase = GamePhase.TRAVEL
+            updateUI()
         }
 
     }
@@ -556,7 +567,6 @@ class MainWindow(val game: Game) {
         tutorialPosition -= 1
         game.log("----------")
         game.log(game.tutorialText[tutorialPosition])
-        game.log("----------")
     }
 
     fun handleCardPlaced(wasDamaged: Boolean) {
@@ -625,6 +635,9 @@ class MainWindow(val game: Game) {
 class CardWindow(val owner: MainWindow, val game: Game, var card: Card) {
     val frame = JFrame(card.name)
     private val panel = JPanel().apply { layout = null }
+    private val cardImageLabel = JLabel()
+    private val intensityLabel = JLabel("+${card.intensity}")
+    private val effectLabel = JLabel(card.effect)
 
     init {
         setupLayout()
@@ -637,10 +650,24 @@ class CardWindow(val owner: MainWindow, val game: Game, var card: Card) {
 
     private fun setupLayout() {
         panel.preferredSize = Dimension(200, 300) // the window header is an extra 30px tall
+
+        cardImageLabel.setBounds(10, 10, 180, 180)
+        intensityLabel.setBounds(10, 200, 180, 40)
+        effectLabel.setBounds(10, 250, 180, 50)
+
+        panel.add(cardImageLabel)
+        panel.add(intensityLabel)
+        panel.add(effectLabel)
     }
 
     private fun setupStyles() {
+        cardImageLabel.icon = ImageIcon(card.icon)
 
+        intensityLabel.horizontalAlignment = SwingConstants.CENTER
+        intensityLabel.font = Font("SANS_SERIF", Font.BOLD, 20)
+
+        effectLabel.horizontalAlignment = SwingConstants.CENTER
+        effectLabel.font = Font("SANS_SERIF", Font.BOLD, 30)
     }
 
     private fun setupActions() {
@@ -679,6 +706,15 @@ class CardWindow(val owner: MainWindow, val game: Game, var card: Card) {
 
     private fun updateUI() {
         frame.title = card.name
+
+        if (card.legendary) {
+            intensityLabel.isVisible = false
+            effectLabel.text = "???"
+        } else {
+            intensityLabel.text = "+${card.intensity}"
+            intensityLabel.isVisible = true
+            effectLabel.text = card.effect
+        }
     }
 
     fun play() {
@@ -714,7 +750,7 @@ class Card(
     val name: String,
     private val image: String,
     val effect: String,
-    private var intensity: Int,
+    var intensity: Int,
     val legendary: Boolean
 ) {
     val icon = ClassLoader.getSystemResource("images/cards/$image")
