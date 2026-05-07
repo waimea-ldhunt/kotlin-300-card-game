@@ -1,6 +1,6 @@
-# PROJECT NAME HERE
+# Cardlike Adventure
 
-by YOUR NAME HERE
+by Lachlan Hunt
 
 ---
 

@@ -1,3 +1,16 @@
+/**
+ * =====================================================================
+ * Programming Project for NCEA Level 3, Standard 91906
+ * ---------------------------------------------------------------------
+ * Project Name:   Cardlike Adventure
+ * Project Author: Lachlan Hunt
+ * GitHub Repo: https://github.com/waimea-ldhunt/kotlin-300-card-game
+ * ---------------------------------------------------------------------
+ * Notes:
+ *
+ * =====================================================================
+ */
+
 import com.formdev.flatlaf.themes.FlatMacDarkLaf
 import java.awt.*
 import java.awt.event.ComponentAdapter
@@ -5,6 +18,8 @@ import java.awt.event.ComponentEvent
 import javax.swing.*
 import kotlin.math.sin
 import kotlin.system.exitProcess
+
+const val STANDARD_OFFSET = 30
 
 enum class GamePhase { //Enum containing each different possible game phase
     INTRO, TUTORIAL, TRAVEL, BATTLE_START, PLAYER_TURN, ENEMY_TURN, DEFEAT, ENDING
@@ -67,11 +82,13 @@ class Game {
         setupGame()
     }
 
+    /**
+     * Setting up the cards, enemies, locations, decks and map
+     */
     private fun setupGame() {
         /*
         * SETTING UP CARDS
         * */
-
         val stick = Card("Big Stick", "stick.png", CardEffect.DAMAGE, 5, false)
         val shovel = Card("Shovel", "shovel.png", CardEffect.DAMAGE, 7, false)
         val axe = Card("Axe", "axe.png", CardEffect.DAMAGE, 8, false)
@@ -84,10 +101,10 @@ class Game {
 
         val speedPotion = Card("Speed Potion", "speedPotion.png", CardEffect.ACCELERATE, 3, false)
 
-        val miraclePotion = Card("Miracle Potion", "placeholder.png", CardEffect.MIRACLE, 100, true)
-        val dodgeBook = Card("The art of Dodging", "placeholder.png", CardEffect.DODGE, 40, true)
-        val nuke = Card("Nuclear Bomb", "placeholder.png", CardEffect.DAMAGE, 123, true)
-        val bioweapon = Card("Chemical 42", "placeholder.png", CardEffect.POISON, 10, true)
+        val miraclePotion = Card("Miracle Potion", "miraclePotion.png", CardEffect.MIRACLE, 150, true)
+        val dodgeBook = Card("The art of Dodging", "book.png", CardEffect.DODGE, 40, true)
+        val nuke = Card("Nuclear Bomb", "nuke.png", CardEffect.DAMAGE, 123, true)
+        val bioweapon = Card("Chemical 42", "chem.png", CardEffect.POISON, 10, true)
 
         normalDeck.add(stick)
         normalDeck.add(shovel)
@@ -175,7 +192,7 @@ class Game {
                 "Tall Horse",
                 "giraffe.png",
                 73,
-                5..11,
+                1..5,
                 7,
                 "Hoof Kick",
                 SpecialAbility("Wierd Neigh", EnemySpecial.POWER_UP)
@@ -226,7 +243,7 @@ class Game {
 
         val kraken =
             Enemy(
-                "Giant Squid",
+                "Scribble Kraken",
                 "kraken.png",
                 130,
                 1..1,
@@ -252,7 +269,7 @@ class Game {
         * */
 
         val village = Location("The Village", "village.png", mutableListOf(stranger), false)
-        map.add(listOf(village))
+        map.add(listOf(village, village))
 
         //Temperate biomes (2 out of 3 are visible)
         val meadow = Location("Sunlit Meadow", "meadow.png", mutableListOf(ant, flyingSnake, flower), false)
@@ -292,34 +309,49 @@ class Game {
 
         location = village
 
-        //Initial game dialouge
+        //Initial game dialog
         log("Howdy Stranger!\nI see you are wanting to leave the town,\nwould you like any advice from a seasoned traveller?")
     }
 
-    fun travel(choice: Char) { // Sets the location based on choice
+    /**
+     * Sets the location based on choice
+     */
+    fun travel(choice: Char) {
         when (choice) {
-            'A' -> location = map[(distanceTravelled / 100) + 1][0]
-            'B' -> location = map[(distanceTravelled / 100) + 1][1]
+            'A' -> location = map[(distanceTravelled) + 1][0]
+            'B' -> location = map[(distanceTravelled) + 1][1]
         }
-        distanceTravelled += 100
+        distanceTravelled++
 
         //gets enemy from the location
         enemy = location.possibleEnemies[location.possibleEnemies.indices.random()]
     }
 
-    fun log(str: String) { //adds a line of text to the game log
+    /**
+     * adds a line of text to the game log
+     */
+    fun log(str: String) {
         gameLog.add(str)
     }
 
-    fun drawRandomNormalCard(): Card { //gets random non-legendary card from deck
+    /**
+     * gets random non-legendary card from deck
+     */
+    fun drawRandomNormalCard(): Card {
         return normalDeck[normalDeck.indices.random()]
     }
 
-    fun drawRandomLegendaryCard(): Card { //gets random legendary card from deck
+    /**
+     * gets random legendary card from deck
+     */
+    fun drawRandomLegendaryCard(): Card {
         return legendaryDeck[legendaryDeck.indices.random()]
     }
 
-    fun getRandomNormalCardFromHand(): CardWindow { //gets random non-legendary card from player hand
+    /**
+     * gets random non-legendary card from player hand
+     */
+    fun getRandomNormalCardFromHand(): CardWindow {
         while (true) {
             val window = hand[hand.indices.random()]
             if (window.card.legendary) continue
@@ -327,63 +359,67 @@ class Game {
         }
     }
 
-    fun enemyTurn(game: Game): Boolean { //runs through enemy attack and special ability, returns true if loss detected
+    /**
+     * runs through enemy attack and special ability, returns true if loss detected
+     */
+    fun enemyAttack(): Boolean {
         log("----------")
         log("${enemy.name} uses Attack: ${enemy.attackName}")
 
+        //try regular attack
         if (tryHit(false)) {
             val damage = enemy.attack.random()
             health -= damage
             log("You took $damage Damage")
-            if (!checkLoss()) {
-                enemy.specialAbility?.doSpecialAttack(game)
-            }
         } else {
             log("${enemy.name} missed!")
         }
-
-        //if not yet lost, handle poison
-        if (!checkLoss()) {
-            if (enemy.poison > 0) {
-                log("----------")
-                log("${enemy.name} is being slowly eaten by Poison")
-                log("${enemy.name} took ${enemy.poison} Damage")
-                enemy.health -= enemy.poison
-            }
-            return false
-        } else {
-            return true
-        }
-
+        return checkLoss()
     }
 
-    fun tryFlee(): Boolean { //speed contest between player and enemy, if enemy speed > player speed, 0% chance of escape
+    /**
+     * speed contest between player and enemy, if enemy speed > player speed, 0% chance of escape
+     */
+    fun tryFlee(): Boolean {
         return ((1..100).random() > ((enemy.speed / speed) * 100))
     }
 
-    private fun checkLoss(): Boolean { //checks if player has lost
+    /**
+     * checks if player has lost
+     */
+    fun checkLoss(): Boolean {
         return (health <= 0)
     }
 
-    fun checkWin(): Boolean { //checks if enemy has lost
+    /**
+     * checks if enemy has lost
+     */
+    fun checkWin(): Boolean {
         return (enemy.health <= 0)
     }
 
-    fun resetStats() { //resets player values
+    /**
+     * resets player values
+     */
+    fun resetStats() {
         maxHealth = 100
         if (health > maxHealth) health = maxHealth
         speed = 5
-        dodgeChance = 20
+        dodgeChance = 20 + (5 * legendaryCount)
         log("#--------------------")
         log("You feel the effects of battle fading")
 
         //unfreeze cards
         for (cardWindow in hand) {
             cardWindow.frame.isEnabled = true
+            cardWindow.updateUI()
         }
     }
 
-    fun tryHit(withDisadvantage: Boolean): Boolean { //try to hit player, if "has disadvantage" only hits if passed twice
+    /**
+     * try to hit player, if "has disadvantage" only hits if passed twice
+     */
+    fun tryHit(withDisadvantage: Boolean): Boolean {
         return if (withDisadvantage) {
             ((1..100).random() > dodgeChance && (1..100).random() > dodgeChance)
         } else {
@@ -449,6 +485,7 @@ class MainWindow(private val game: Game) {
     //Timers
     private val enemyDelayTimer = Timer(1000, null)
     private val battleEndTimer = Timer(1000, null)
+    private val enemyAttackDelayTimer = Timer(500, null)
 
     init {
         setupLayout()
@@ -458,7 +495,10 @@ class MainWindow(private val game: Game) {
         updateUI()
     }
 
-    private fun setupLayout() { //sets locations and areas of each element and then adds them to the pane
+    /**
+     * sets locations and areas of each element and then adds them to the pane
+     */
+    private fun setupLayout() {
         pane.preferredSize = Dimension(1300, 420)
 
         quitButton.setBounds(960, 380, 120, 30)
@@ -528,7 +568,10 @@ class MainWindow(private val game: Game) {
         pane.add(cardArea)
     }
 
-    private fun setupStyles() { //styles elements for aesthetic purposes
+    /**
+     * styles elements for aesthetic purposes
+     */
+    private fun setupStyles() {
         locationLabel.horizontalAlignment = SwingConstants.CENTER
         locationLabel.font = Font("SANS_SERIF", Font.BOLD, 20)
         locationLabel.setOpaque(true)
@@ -580,11 +623,13 @@ class MainWindow(private val game: Game) {
         cardArea.font = Font("SANS_SERIF", Font.BOLD, 40)
     }
 
-    private fun setupWindow() { //setup of window properties
+    /**
+     * setup of window properties
+     */
+    private fun setupWindow() {
         frame.isResizable = false                           // Can't resize
         frame.contentPane = pane                            // Define the main content
         frame.isUndecorated = true
-        frame.isAlwaysOnTop = true
         frame.pack()
         frame.setLocation(
             ((Toolkit.getDefaultToolkit().screenSize.width - frame.width) / 2),
@@ -593,7 +638,10 @@ class MainWindow(private val game: Game) {
         windowLocation = frame.location
     }
 
-    private fun setupActions() { //setup of action listeners
+    /**
+     * setup of action listeners
+     */
+    private fun setupActions() {
         quitButton.addActionListener { //quit option, gets confirm dialog
             if (JOptionPane.showConfirmDialog(
                     frame,
@@ -610,8 +658,10 @@ class MainWindow(private val game: Game) {
         buttonB.addActionListener { handleB() } //right (B) game button
 
         //Timer Listeners
-        enemyDelayTimer.addActionListener { handleEnemyTurn() }
+        enemyDelayTimer.addActionListener { handleEnemyTurnFirst() }
+        enemyAttackDelayTimer.addActionListener { handleEnemyTurnLast() }
         battleEndTimer.addActionListener { handleBattleEnd() }
+
 
         frame.addComponentListener(object : ComponentAdapter() { //Updates Window Location When Moved
             override fun componentMoved(e: ComponentEvent?) {
@@ -620,7 +670,10 @@ class MainWindow(private val game: Game) {
         })
     }
 
-    private fun updateUI() { //updates UI elements
+    /**
+     * updates UI elements
+     */
+    private fun updateUI() {
         /**
          * Update Consistent UI elements
          */
@@ -710,7 +763,7 @@ class MainWindow(private val game: Game) {
                 cardArea.isVisible = false
             }
 
-            GamePhase.ENDING -> {
+            GamePhase.ENDING, GamePhase.DEFEAT -> {
                 buttonA.isEnabled = false
                 buttonB.isEnabled = false
 
@@ -724,11 +777,17 @@ class MainWindow(private val game: Game) {
         }
     }
 
-    fun show() { //shows the window
+    /**
+     * shows the window
+     */
+    fun show() {
         frame.isVisible = true
     }
 
-    private fun handleA() { //handles the interaction of the left (A) game button, based on game state
+    /**
+     * handles the interaction of the left (A) game button, based on game state
+     */
+    private fun handleA() {
         when (game.phase) {
             GamePhase.INTRO -> { //Tutorial
                 game.log("----------\n> Yes please")
@@ -749,6 +808,7 @@ class MainWindow(private val game: Game) {
             }
 
             GamePhase.BATTLE_START -> { //Fight
+                game.phase = GamePhase.PLAYER_TURN
                 updateUI()
             }
 
@@ -756,13 +816,16 @@ class MainWindow(private val game: Game) {
         }
     }
 
-    private fun handleB() { //handles the interaction of the right (B) game button, based on game state
+    /**
+     * handles the interaction of the right (B) game button, based on game state
+     */
+    private fun handleB() {
         when (game.phase) {
             GamePhase.INTRO -> { //Skip Tutorial
                 game.log("----------\n> I can handle myself\n----------")
                 game.log("Very well then, take these cards as a gift,\n use them to defend yourself if you are in danger")
                 game.hand.add(CardWindow(this, game, game.drawRandomNormalCard(), 0))
-                game.hand.add(CardWindow(this, game, game.drawRandomNormalCard(), 30))
+                game.hand.add(CardWindow(this, game, game.drawRandomNormalCard(), STANDARD_OFFSET))
                 game.phase = GamePhase.TRAVEL
                 updateUI()
             }
@@ -779,14 +842,15 @@ class MainWindow(private val game: Game) {
             }
 
             GamePhase.PLAYER_TURN, GamePhase.BATTLE_START -> { //Flee
+                game.log("----------")
                 game.log("You Tried To Run Away")
                 if (game.tryFlee()) {
                     game.log("You Escaped!")
-
                     game.phase = GamePhase.TRAVEL
                     updateUI()
                 } else {
                     game.log("${game.enemy.name} Caught Up With You!")
+                    game.phase = GamePhase.ENEMY_TURN
                     updateUI()
                     enemyDelayTimer.restart()
                 }
@@ -797,7 +861,10 @@ class MainWindow(private val game: Game) {
         }
     }
 
-    private fun stepTutorial() { //shows the next section of the tutorial
+    /**
+     * shows the next section of the tutorial
+     */
+    private fun stepTutorial() {
         tutorialPosition += 1
         if (tutorialPosition < 4) {
             game.log("----------")
@@ -807,20 +874,26 @@ class MainWindow(private val game: Game) {
             game.log("That is all the advice I have for your journey,\ntake these cards, it is dangerous to go without any.\nGood Luck!")
             game.log("----------")
             game.hand.add(CardWindow(this, game, game.drawRandomNormalCard(), 0))
-            game.hand.add(CardWindow(this, game, game.drawRandomNormalCard(), 30))
+            game.hand.add(CardWindow(this, game, game.drawRandomNormalCard(), STANDARD_OFFSET))
             game.phase = GamePhase.TRAVEL
             updateUI()
         }
 
     }
 
-    private fun stepDownTutorial() { //shows the previous section of the tutorial
+    /**
+     * shows the previous section of the tutorial
+     */
+    private fun stepDownTutorial() {
         tutorialPosition -= 1
         game.log("----------")
         game.log(game.tutorialText[tutorialPosition])
     }
 
-    fun handleCardPlaced(wasDamaged: Boolean) { //handle window events after card is placed
+    /**
+     * handle window events after card is placed
+     */
+    fun handleCardPlaced(wasDamaged: Boolean) {
         if (wasDamaged) shakeEnemy() //shake enemy if damaged
         if (game.checkWin()) { //check if enemy was defeated, if not, move to enemy turn
             game.log("#--------------------")
@@ -832,71 +905,142 @@ class MainWindow(private val game: Game) {
         }
     }
 
-    private fun handleEnemyTurn() { //runs through enemy turn
+    /**
+     * runs through enemy turn
+     */
+    private fun handleEnemyTurnFirst() {
         enemyDelayTimer.stop()
-
-        if (game.enemyTurn(game)) { //runs enemy turn, returns true if loss
-            game.log("#--------------------")
-            game.log("  You were defeated")
-            game.log("#--------------------")
-        } else if (game.checkWin()) { //check if enemy defeated
+        if (game.checkWin()) { //check if enemy defeated
             game.log("#--------------------")
             game.log("  You defeated ${game.enemy.name}")
             battleEndTimer.restart()
-        } else { //move to player turn
-            game.phase = GamePhase.PLAYER_TURN
-        }
+        } else if (game.enemyAttack()) { //runs enemy normal attack, returns true if loss
+            game.log("#--------------------")
+            game.log("  You were defeated")
+            game.log("#--------------------")
+            handleDefeat()
+        } else enemyAttackDelayTimer.restart() //if player alive, time to handleTurnLast
         updateUI()
     }
 
-    private fun handleBattleEnd() { //checks for ending and then rewards cards for defeating the enemy
+    /**
+     * Handles enemy special attack, poison and then moves to player turn
+     */
+    private fun handleEnemyTurnLast() {
+        enemyAttackDelayTimer.stop()
+        game.enemy.specialAbility?.doSpecialAttack(game)
+
+        if (game.hand.size == 0) { //lose state if player ran out of cards.
+            game.log("#--------------------")
+            game.log("  You ran out of cards to defend yourself,")
+            game.log("  You were defeated")
+            game.log("#--------------------")
+            handleDefeat()
+        }
+
+        if (!game.checkLoss()) {//if player alive, handle poison
+            if (game.enemy.poison > 0) {
+                game.log("----------")
+                game.log("${game.enemy.name} is being slowly eaten by Poison")
+                game.log("${game.enemy.name} took ${game.enemy.poison} Damage")
+                game.enemy.poison *= 2
+                game.enemy.health -= game.enemy.poison
+            }
+        }
+        if (game.checkWin()) { //check if enemy defeated, if not, move to player turn
+            game.log("#--------------------")
+            game.log("  You defeated ${game.enemy.name}")
+            battleEndTimer.restart()
+        } else {
+            game.phase = GamePhase.PLAYER_TURN
+            updateUI()
+        }
+
+    }
+
+    /**
+     * checks for ending and then rewards cards for defeating the enemy
+     */
+    private fun handleBattleEnd() {
         battleEndTimer.stop()
-        if (game.location.name == "The Lost Realm") handleEnding() //if win on last area, begin ending
+        if (game.location == game.map[7][0]) handleEnding() //if win on last area, begin ending
         else {
             game.phase = GamePhase.TRAVEL
             if (game.location.dropsLegendayCards) { //card rewards
                 game.hand.add(CardWindow(this, game, game.drawRandomLegendaryCard(), 0))
+                game.legendaryCount++
+                game.dodgeChance += 5
             } else {
                 game.hand.add(CardWindow(this, game, game.drawRandomNormalCard(), 0))
-                game.hand.add(CardWindow(this, game, game.drawRandomNormalCard(), 30))
+                game.hand.add(CardWindow(this, game, game.drawRandomNormalCard(), STANDARD_OFFSET))
             }
             game.resetStats()
             updateUI()
         }
     }
 
-    private fun handleEnding() { //TODO
-        game.phase = GamePhase.ENDING
-        game.enemy = game.map[0][0].possibleEnemies[0]
-        for (cardWindow in game.hand) {
-            cardWindow.discard()
-        }
+    /**
+     * Handles the loss state and defeat dialog
+     */
+    private fun handleDefeat() {
+        game.phase = GamePhase.DEFEAT
+        game.log("Your journey ends here.")
+        game.log("The cards weren't enough.")
+        game.log("${game.enemy.name} was too strong.")
+        game.log("Everything is so dark.")
+        game.log("Your memories are fading, or are they being taken?")
+        game.log("It doesn't matter.")
+        game.log("Nothing matters anymore.\n")
+        game.log("-----FIN-----")
         updateUI()
     }
 
-    private fun shakeEnemy() { //shakes the enemy image
-        val originalLocation = enemyImageLabel.location
-        val startTime = System.currentTimeMillis()
-        val shakeDistance = 25
-        val shakeDuration = 500
-        val shakeCycle = 50
+    /**
+     * Handles the win state and ending dialog
+     */
+    private fun handleEnding() {
+        game.phase = GamePhase.ENDING
+        game.enemy = game.map[0][0].possibleEnemies[0]
+        for (cardWindow in game.hand) {
+            cardWindow.frame.dispose()
+        }
+        game.log("#--------------------")
+        game.log("How?")
+        game.log("How!?")
+        game.log("How could you possibly have defeated me?")
+        game.log("This wasn't supposed to happen!")
+        game.log("...")
+        game.log("I was going to steal and eat your memories,")
+        game.log("but it seems that I underestimated you.")
+        game.log("I should never have given you those cards")
+        game.log("\n-----FIN-----")
+        updateUI()
+    }
 
-        val timer = Timer(shakeCycle) {
-            val elapsed = System.currentTimeMillis() - startTime
-            if (elapsed > shakeDuration) {
+    /**
+     * shakes the enemy image
+     */
+    private fun shakeEnemy() {
+        val originalLocation = enemyImageLabel.location
+        val start = System.currentTimeMillis()
+        val shakeTimer = Timer(50) {
+            val elapsed = System.currentTimeMillis() - start
+            if (elapsed > 200) {
                 enemyImageLabel.location = originalLocation
                 (it.source as Timer).stop()
             } else {
-                val offset = (sin(elapsed.toDouble() * 0.1) * shakeDistance).toInt()
-                enemyImageLabel.location = Point(originalLocation.x + offset, originalLocation.y)
+                val distance = (sin(elapsed.toDouble() * 0.1) * 25).toInt()
+                enemyImageLabel.location = Point(originalLocation.x + distance, originalLocation.y)
             }
         }
-        timer.start()
+        shakeTimer.start()
     }
 }
 
+const val CARD_PLACE_TOLERANCE = 10 //Tolerance for accuracy when placing cards in the card area
+
 /**
- * Card UI window, handles movement, UI updates, ect...
+ * Card UI window, handles window movement, UI updates, ect...
  */
 class CardWindow(val owner: MainWindow, val game: Game, var card: Card, private var initialOffsetY: Int) {
     val frame = JFrame(card.name)
@@ -918,7 +1062,10 @@ class CardWindow(val owner: MainWindow, val game: Game, var card: Card, private 
         frame.isVisible = true
     }
 
-    private fun setupLayout() { //sets locations and areas of each element and then adds them to the pane
+    /**
+     * sets locations and areas of each element and then adds them to the pane
+     */
+    private fun setupLayout() {
         panel.preferredSize = Dimension(200, 300) // the window header is an extra 30px tall
 
         cardImageLabel.setBounds(10, 10, 180, 180)
@@ -930,7 +1077,10 @@ class CardWindow(val owner: MainWindow, val game: Game, var card: Card, private 
         panel.add(effectLabel)
     }
 
-    private fun setupStyles() { //styles elements for aesthetic purposes
+    /**
+     * styles elements for aesthetic purposes
+     */
+    private fun setupStyles() {
         cardImageLabel.icon = ImageIcon(card.icon)
 
         intensityLabel.horizontalAlignment = SwingConstants.CENTER
@@ -940,19 +1090,27 @@ class CardWindow(val owner: MainWindow, val game: Game, var card: Card, private 
         effectLabel.font = Font("SANS_SERIF", Font.BOLD, 30)
     }
 
-    private fun setupActions() { //setup of action listeners
+    /**
+     * setup of action listeners
+     */
+    private fun setupActions() {
         frame.addComponentListener(object : ComponentAdapter() {
             override fun componentMoved(e: ComponentEvent?) {
                 val location = frame.location
                 //Check if card is in place area
                 if (game.phase == GamePhase.PLAYER_TURN || game.phase == GamePhase.BATTLE_START) {
                     val placeLocation =
-                        Point(owner.windowLocation.x + owner.placeArea.x, owner.windowLocation.y + owner.placeArea.y)
-                    if (location.x in (placeLocation.x - 10..placeLocation.x + 10) &&
-                        location.y in (placeLocation.y - 10..placeLocation.y + 10)
+                        Point(
+                            owner.windowLocation.x + owner.placeArea.x,
+                            owner.windowLocation.y + owner.placeArea.y
+                        )
+                    if (location.x in (placeLocation.x - CARD_PLACE_TOLERANCE..placeLocation.x + CARD_PLACE_TOLERANCE) &&
+                        location.y in (placeLocation.y - CARD_PLACE_TOLERANCE..placeLocation.y + CARD_PLACE_TOLERANCE)
                     ) {
+                        //End mouse drag
                         frame.isEnabled = false
                         frame.isEnabled = true
+
                         play()
                     }
                 }
@@ -960,48 +1118,69 @@ class CardWindow(val owner: MainWindow, val game: Game, var card: Card, private 
         })
     }
 
-    private fun setupWindow() { //setup of window properties
+    /**
+     *setup of window properties
+     */
+    private fun setupWindow() {
         frame.isEnabled = true
         frame.isResizable = false                           // Can't resize
         frame.contentPane = panel                           // Define the main content
         frame.defaultCloseOperation = WindowConstants.DO_NOTHING_ON_CLOSE
-        frame.isAlwaysOnTop = true
         frame.pack()
         frame.setLocation((owner.frame.x + 10), (owner.frame.y + owner.frame.height + 10 + initialOffsetY))
     }
 
-    private fun updateUI() {
+    /**
+     * updates UI elements
+     */
+    fun updateUI() {
         frame.title = card.name
         cardImageLabel.icon = ImageIcon(card.icon)
 
-        if (card.legendary) {
+        if (frame.isEnabled) {
+            if (card.legendary) {
+                //Legendary Card UI
+                intensityLabel.isVisible = false
+
+                effectLabel.text = "???"
+                effectLabel.foreground = Color.YELLOW
+            } else {
+                //Normal Card UI
+                intensityLabel.text = "+${card.intensity}"
+                intensityLabel.isVisible = true
+
+                effectLabel.text = effectText[card.effect.name]
+            }
+        } else {
+            intensityLabel.foreground = Color.BLUE
             intensityLabel.isVisible = false
 
-            effectLabel.text = "???"
-            effectLabel.foreground = Color.YELLOW
-        } else {
-            intensityLabel.text = "+${card.intensity}"
-            intensityLabel.isVisible = true
-            
-            effectLabel.text = effectText[card.effect.name]
+            effectLabel.foreground = Color.BLUE
+            effectLabel.text = "STUNNED"
         }
     }
 
+    /**
+     * manage the window when the card is placed
+     */
     fun play() {
-        //Card is placed
-        if (card.playCard(game, true)) discard()
-        else redraw(0)
+        //window card place handler, passing true if the card did damage
         owner.handleCardPlaced((card.effect == CardEffect.DAMAGE))
+        //if play card returns true, the card is legendary and is deleted when it is used
+        if (card.playCard(game, true)) frame.dispose()
+        else redraw(0)
 
     }
 
-    fun discard() {
-        frame.dispose()
-    }
-
+    /**
+     * //draw a new card
+     */
     fun redraw(offsetY: Int) {
+        //change the card
         card = game.drawRandomNormalCard()
         updateUI()
+
+        //move it to the specified location, with a small offset
         frame.setLocation(
             (owner.frame.location.x + owner.frame.width - 220),
             (owner.frame.location.y + owner.frame.height + 10 + offsetY)
@@ -1009,7 +1188,9 @@ class CardWindow(val owner: MainWindow, val game: Game, var card: Card, private 
     }
 }
 
-
+/**
+ * Location, managing location details and image
+ */
 class Location(
     val name: String,
     image: String,
@@ -1019,6 +1200,9 @@ class Location(
     val icon = ClassLoader.getSystemResource("images/locations/$image")!!
 }
 
+/**
+ * Card, managing card stats, image and functionality
+ */
 class Card(
     val name: String,
     image: String,
@@ -1028,9 +1212,16 @@ class Card(
 ) {
     val icon = ClassLoader.getSystemResource("images/cards/$image")!!
 
-    fun playCard(game: Game, isPlayer: Boolean): Boolean {
+    /**
+     * Function based on the CardEffect, returns if the card was legendary
+     */
+    fun playCard(
+        game: Game,
+        isPlayer: Boolean
+    ): Boolean {
         game.log("----------")
         game.log("You played card: $name")
+
         when (effect) {
             CardEffect.DAMAGE -> {
                 if (isPlayer) {
@@ -1084,17 +1275,22 @@ class Card(
             }
 
             CardEffect.POISON -> {
-                game.enemy.poison += 1
+                game.enemy.poison * 2 //for if poison is used twice on one enemy
+                game.enemy.poison++
 
                 game.log("${game.enemy.name} was Poisoned")
             }
         }
+        //if the card was legendary, reduce the count
         if (legendary) game.legendaryCount--
         return legendary
     }
 
 }
 
+/**
+ * Enemy, managing location details and image
+ */
 class Enemy(
     val name: String,
     image: String,
@@ -1109,15 +1305,20 @@ class Enemy(
     var poison = 0
 }
 
+/**
+ * Special Ability, function based on the effect
+ */
 class SpecialAbility(private val name: String, private val effect: EnemySpecial) {
     fun doSpecialAttack(game: Game) {
         game.log("----------")
         game.log("${game.enemy.name} used special ability: $name")
+
         when (effect) {
             EnemySpecial.HEAL -> {
                 val intensity = (3..8).random()
                 game.enemy.health += intensity
                 game.log("${game.enemy.name} healed $intensity health!")
+                if (game.enemy.health > game.enemy.maxHealth) game.enemy.health = game.enemy.maxHealth
             }
 
             EnemySpecial.ACCELERATE -> {
@@ -1139,6 +1340,7 @@ class SpecialAbility(private val name: String, private val effect: EnemySpecial)
                 if (game.tryHit(true)) {
                     val cardWindow = game.getRandomNormalCardFromHand()
                     cardWindow.frame.isEnabled = false
+                    cardWindow.updateUI()
                     game.log("${game.enemy.name} stunned card: ${cardWindow.card.name}")
                 } else {
                     game.log("${game.enemy.name} missed!")
@@ -1147,11 +1349,18 @@ class SpecialAbility(private val name: String, private val effect: EnemySpecial)
 
             EnemySpecial.DEVOUR -> {
                 if (game.tryHit(true)) {
-                    val cardWindow = game.getRandomNormalCardFromHand()
-                    game.log("${game.enemy.name} devoured card: ${cardWindow.card.name}")
-                    cardWindow.discard()
-                    game.log("${game.enemy.name} grew ${game.enemy.attack.min()} more tentacles")
-                    game.enemy.attack = game.enemy.attack.min() * 2..game.enemy.attack.max() * 2
+                    if (game.hand.size <= 1) {
+                        val cardWindow = game.getRandomNormalCardFromHand()
+                        game.log("${game.enemy.name} devoured card: ${cardWindow.card.name}")
+                        cardWindow.frame.dispose()
+                        game.hand.remove(cardWindow)
+                        game.log("${game.enemy.name} grew ${game.enemy.attack.min()} more tentacles")
+                        game.enemy.attack = game.enemy.attack.min() * 2..game.enemy.attack.max() * 2
+
+                    } else {
+                        game.log("${game.enemy.name} missed!")
+                    }
+                    
                 } else {
                     game.log("${game.enemy.name} missed!")
                 }
@@ -1159,10 +1368,14 @@ class SpecialAbility(private val name: String, private val effect: EnemySpecial)
 
             EnemySpecial.POWER_STEAL -> {
                 if (game.tryHit(false)) {
-                    val cardWindow = game.getRandomNormalCardFromHand()
-                    game.log("${game.enemy.name} used your card: ${cardWindow.card.name}")
-                    cardWindow.card.playCard(game, false)
-                    cardWindow.redraw(30)
+                    if (game.hand.size <= 1) {
+                        val cardWindow = game.getRandomNormalCardFromHand()
+                        game.log("${game.enemy.name} used your card: ${cardWindow.card.name}")
+                        cardWindow.card.playCard(game, false)
+                        cardWindow.redraw(STANDARD_OFFSET)
+                    } else {
+                        game.log("${game.enemy.name} missed!")
+                    }
                 } else {
                     game.log("${game.enemy.name} missed!")
                 }

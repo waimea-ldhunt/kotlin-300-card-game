@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="6a8cc871-b8cb-410e-9bc2-7ea9541fdf4d" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/docs/evidence/screenshots/cardIconAfter.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/evidence/screenshots/cardIconBefore.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/Main.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/Main.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/images/cards/axe.png" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/images/cards/axe.png" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ExternalProjectsData">
+    <projectState path="$PROJECT_DIR$">
+      <ProjectState />
+    </projectState>
+  </component>
+  <component name="ExternalProjectsManager">
+    <system id="GRADLE">
+      <state>
+        <projects_view>
+          <tree_state>
+            <expand>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="kotlin-300-card-game" type="f1a62948:ProjectNode" />
+              </path>
+            </expand>
+            <select />
+          </tree_state>
+        </projects_view>
+      </state>
+    </system>
+  </component>
+  <component name="FormatOnSaveOptions">
+    <option name="myRunOnSave" value="true" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="OptimizeOnSaveOptions">
+    <option name="myRunOnSave" value="true" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 4
+}</component>
+  <component name="ProjectId" id="3BPekkb3JV6aHp450iWsYCWURYN" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Gradle.Build kotlin-300-card-game.executor&quot;: &quot;Run&quot;,
+    &quot;Kotlin.MainKt.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/ldhunt/OneDrive - Waimea College/Documents/_Y13/300DTD/Kotlin/kotlin-300-card-game/src/main/resources/images/cards&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Libraries&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.0&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.0&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;actions.on.save&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\ldhunt\OneDrive - Waimea College\Documents\_Y13\300DTD\Kotlin\kotlin-300-card-game\src\main\resources\images\cards" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\lachl\OneDrive - Waimea College\Documents\_Y13\300DTD\Kotlin\kotlin-300-card-game\src\main\resources\images\enemies" />
+      <recent name="C:\Users\lachl\OneDrive - Waimea College\Documents\_Y13\300DTD\Kotlin\kotlin-300-card-game\docs\evidence\screenshots" />
+      <recent name="C:\Users\ldhunt\OneDrive - Waimea College\Documents\_Y13\300DTD\Kotlin\kotlin-300-card-game\src\main\resources\images\enemies" />
+      <recent name="C:\Users\ldhunt\OneDrive - Waimea College\Documents\_Y13\300DTD\Kotlin\kotlin-300-card-game\src\main\resources\images\locations" />
+    </key>
+    <key name="CopyKotlinDeclarationDialog.RECENTS_KEY">
+      <recent name="" />
+    </key>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="6a8cc871-b8cb-410e-9bc2-7ea9541fdf4d" name="Changes" comment="" />
+      <created>1774395279312</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1774395279312</updated>
+      <workItem from="1774395281030" duration="8690000" />
+      <workItem from="1774472747985" duration="2155000" />
+      <workItem from="1774555475018" duration="3420000" />
+      <workItem from="1774823110264" duration="3234000" />
+      <workItem from="1774992308471" duration="1961000" />
+      <workItem from="1774999752138" duration="7951000" />
+      <workItem from="1775077935550" duration="3141000" />
+      <workItem from="1776118973611" duration="1719000" />
+      <workItem from="1776122009745" duration="4955000" />
+      <workItem from="1776217823944" duration="4463000" />
+      <workItem from="1776722870399" duration="2310000" />
+      <workItem from="1776817834257" duration="7962000" />
+      <workItem from="1776978078369" duration="3643000" />
+      <workItem from="1776986844259" duration="774000" />
+      <workItem from="1776987633717" duration="2646000" />
+      <workItem from="1776991604718" duration="2775000" />
+      <workItem from="1777500426396" duration="259000" />
+      <workItem from="1777501399001" duration="150000" />
+      <workItem from="1777501774097" duration="1840000" />
+      <workItem from="1777582895506" duration="3510000" />
+      <workItem from="1777850728794" duration="3554000" />
+      <workItem from="1777854662614" duration="3302000" />
+      <workItem from="1777860572217" duration="3685000" />
+      <workItem from="1777926999914" duration="431000" />
+      <workItem from="1777932195021" duration="3279000" />
+      <workItem from="1777941412602" duration="5067000" />
+      <workItem from="1777971122818" duration="4647000" />
+      <workItem from="1778018984952" duration="2604000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
+  </component>
+</project>
